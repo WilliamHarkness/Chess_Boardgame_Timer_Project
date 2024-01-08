@@ -95,4 +95,10 @@ timestamp_ms timeSince(timestamp_ms time){
     return millis() - time;
 }
 
+timestamp_ms timeSinceSeemless(timestamp_ms *time){
+    timestamp_ms diff = millis() - *time;
+    *time += diff;
+    return diff;
+}
+
 #endif /* __TIMER_H__ */

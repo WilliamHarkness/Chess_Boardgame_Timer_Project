@@ -84,6 +84,7 @@ static displayController_t g_dispCont = {
     }
 };
 
+
 displayStatus_t initDisplay(){
     if (g_dispCont.m_isInit == 0){
 
@@ -194,6 +195,7 @@ displayStatus_t updateDisplay(void){
             }   
         }
     }
+    return DISPLAY_OK;
 }
 
 displayValue_t intToDisplayDigit(uint8_t value){
@@ -203,13 +205,22 @@ displayValue_t intToDisplayDigit(uint8_t value){
     return DISPLAY_BLANK;
 }
 
-displayStatus_t setClockToDisplay(clockFormat_t* time, displaySide_t side){
+clockDisplayType_t getSimplifiedClockType(clockFormat_t* time){
+    if(time->m_m > 0){
+        if(time->m_m > 60){
+            return CLOCK_DISPLAY_HOURS;
+        }
+        return CLOCK_DISPLAY_MINUTES;
+    }
+    return CLOCK_DISPLAY_SECONDS;
+}
+
+displayStatus_t setClockToDisplay(clockFormat_t* time, clockDisplayType_t displayType, displaySide_t side){
     digitSelect_t d0;
     digitSelect_t d1;
     digitSelect_t d2;
     digitSelect_t d3;
     digitSelect_t dx;
-    
     if(side == DISPLAY_SIDE_LEFT){
         d0 = LEFT_CHAR_0;
         d1 = LEFT_CHAR_1;
@@ -225,21 +236,47 @@ displayStatus_t setClockToDisplay(clockFormat_t* time, displaySide_t side){
         dx = RIGHT_PUNCT;
     }
 
+    switch(displayType){
+        case CLOCK_DISPLAY_HOURS:
+                setDisplay(d0, intToDisplayDigit(time->m_m / 600U));
+                setDisplay(d1, intToDisplayDigit((time->m_m / 60U) % 10));
+                setDisplay(d2, DISPLAY_H);
+                setDisplay(d3, DISPLAY_BLANK);
+                setDisplay(dx, PUNCT_BLANK);
+            break;
+
+        case CLOCK_DISPLAY_MINUTES:
+                setDisplay(d0, intToDisplayDigit((time->m_m % 60) / 10));
+                setDisplay(d1, intToDisplayDigit(time->m_m % 10U));
+                setDisplay(d2, intToDisplayDigit(time->m_ms / 10000U));
+                setDisplay(d3, intToDisplayDigit((time->m_ms % 10000U) / 1000U));
+                setDisplay(dx, PUNCT_COLON);
+            break;
+
+        case CLOCK_DISPLAY_SECONDS:
+            setDisplay(d0, intToDisplayDigit(time->m_ms / 10000U));
+            setDisplay(d1, intToDisplayDigit((time->m_ms % 10000U) / 1000U));
+            setDisplay(d2, intToDisplayDigit((time->m_ms / 100U) % 10U));
+            setDisplay(d3, intToDisplayDigit((time->m_ms % 100U) / 10U));
+            setDisplay(dx, PUNCT_DOT);
+            break;
+
+        default:
+            if (time->m_m > 0){
+
+            }
+            else{
+                setDisplay(d0, intToDisplayDigit(time->m_ms / 10000U));
+                setDisplay(d1, intToDisplayDigit((time->m_ms % 10000U) / 1000U));
+                setDisplay(d2, intToDisplayDigit((time->m_ms / 100U) % 10U));
+                setDisplay(d3, intToDisplayDigit((time->m_ms % 100U) / 10U));
+                setDisplay(dx, PUNCT_DOT);
+            }
+            break;
+    }
+
     uint8_t digitValue[4];
 
-    if (time->m_m > 0){
-        setDisplay(d0, intToDisplayDigit(time->m_m / 10U));
-        setDisplay(d1, intToDisplayDigit(time->m_m % 10U));
-        setDisplay(d2, intToDisplayDigit(time->m_ms / 10000U));
-        setDisplay(d3, intToDisplayDigit((time->m_ms % 10000U) / 1000U));
-        setDisplay(dx, PUNCT_COLON);
-    }
-    else{
-        setDisplay(d0, intToDisplayDigit(time->m_ms / 10000U));
-        setDisplay(d1, intToDisplayDigit((time->m_ms % 10000U) / 1000U));
-        setDisplay(d2, intToDisplayDigit((time->m_ms / 100U) % 10U));
-        setDisplay(d3, intToDisplayDigit((time->m_ms % 100U) / 10U));
-        setDisplay(dx, PUNCT_DOT);
-    }
-}
 
+    return DISPLAY_OK;
+}

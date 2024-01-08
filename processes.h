@@ -9,6 +9,12 @@
 #define MIN_NUMBER_PLAYERS 1
 #define MAX_NUMBER_PLAYERS 9
 
+#define BLINK_PERIOD 1000
+#define BLINK_ON_TIME 800
+
+#define CLOCK_HOUR_DISPLAY_PERIOD 3000
+#define CLOCK_HOUR_DISPLAY_OFF_TIME 1500
+
 typedef enum gameMode{
     GAME_MODE_UP_COUNT = 0,
     GAME_MODE_DOWN_COUNT,
@@ -20,7 +26,6 @@ typedef struct gameObject {
     gameMode_t m_mode;
     clockFormat_t m_playerTimer[MAX_NUMBER_PLAYERS];
     clockFormat_t m_rewardTime[MAX_NUMBER_PLAYERS];
-    clockFormat_t m_delayTime[MAX_NUMBER_PLAYERS];
 } gameObject_t;
 
 void initProcess(void);

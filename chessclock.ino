@@ -11,7 +11,6 @@ void setup() {
   initState();
   initDisplay();
   initInputs();
-  initProcess();
 
 //  Serial.begin(115200);
 //  Serial.println("Starting");

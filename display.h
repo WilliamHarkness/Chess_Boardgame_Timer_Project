@@ -6,6 +6,12 @@
 
 /////////////////////// Struct and Enum Definitions /////////////////////
 
+typedef enum clockDisplayType{
+    CLOCK_DISPLAY_HOURS,
+    CLOCK_DISPLAY_MINUTES,
+    CLOCK_DISPLAY_SECONDS,
+} clockDisplayType_t;
+
 typedef enum displaySelect{
     LEFT_CHAR_0 = 0,
     LEFT_CHAR_1 = 1,
@@ -80,6 +86,8 @@ displayStatus_t updateDisplay(void);
 
 displayValue_t intToDisplayDigit(uint8_t value);
 
-displayStatus_t setClockToDisplay(clockFormat_t time, displaySide_t side);
+clockDisplayType_t getSimplifiedClockType(clockFormat_t* time);
+
+displayStatus_t setClockToDisplay(clockFormat_t time, clockDisplayType_t displayType, displaySide_t side);
 
 #endif /* __DISPLAY_H__ */
