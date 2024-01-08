@@ -285,16 +285,25 @@ stateStatus_t gameModeProcess(gameState_t* state, stateStatus_t stateStatus){
                 }
             }
 
-            if(timeSince(timeStamp) > 90000){
+            // Set clock to 1 minute
+            clockFormat_t clock = CLOCK_FORMAT_INIT;
+            clock.m_m = 1;
+            clock.m_ms = 30000;
+            timestamp_ms dt = timeSince(timeStamp);
+
+            if(dt > 90000U){
                 timeStamp = getTimeStamp();
+                dt = 0U;
             }
             if(g_gameObject.m_mode == GAME_MODE_DOWN_COUNT){
-                setTimeToDisplay(90000 - timeSince(timeStamp), DISPLAY_SIDE_RIGHT);
+                subTimeStamp(&clock, dt);
+                setClockToDisplay(&clock, DISPLAY_SIDE_RIGHT);
                 setDisplay(LEFT_CHAR_2, DISPLAY_DASH);
                 setDisplay(LEFT_CHAR_3, DISPLAY_DASH);
             }
             else{
-                setTimeToDisplay(timeSince(timeStamp), DISPLAY_SIDE_RIGHT);
+                timeStampToClockFormat(&clock, dt);
+                setClockToDisplay(&clock, DISPLAY_SIDE_RIGHT);
                 setDisplay(LEFT_CHAR_2, DISPLAY_BLANK);
                 setDisplay(LEFT_CHAR_3, DISPLAY_A);
             }
@@ -348,8 +357,8 @@ stateStatus_t configTimeProcess(gameState_t* state, stateStatus_t stateStatus){
 
             digitValue[0] = clockFormatRef->m_m / 10; // 10s of minutes
             digitValue[1] = clockFormatRef->m_m % 10;
-            digitValue[2] = clockFormatRef->m_s / 10;
-            digitValue[3] = clockFormatRef->m_s % 10;
+            digitValue[2] = clockFormatRef->m_ms / 10000;
+            digitValue[3] = (clockFormatRef->m_ms % 10000) / 1000;
 
             //setTimeToDisplay(*timeRef, DISPLAY_SIDE_RIGHT);
 

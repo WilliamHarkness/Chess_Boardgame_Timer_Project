@@ -34,8 +34,8 @@ typedef struct buttonObj{
     buttonState_t m_prevState;
     buttonState_t m_momentaryState;
     buttonUpdated_t m_updated;
-    clockTime_ms m_timeStampPressed;
-    clockTime_ms m_timeStampReleased;
+    timestamp_ms m_timeStampPressed;
+    timestamp_ms m_timeStampReleased;
 } buttonObj_t;
 
 /////////////////////// Function Definitions /////////////////////

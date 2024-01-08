@@ -1,36 +1,90 @@
 #ifndef __TIMER_H__
 #define __TIMER_H__
 
-#define CLOCK_FORMAT_INIT {0, 0, 0, 0}
+#define CLOCK_FORMAT_INIT {0, 0}
+#define MS_TO_MIN 60000U
 
 typedef unsigned long timestamp_ms;
 
 typedef struct clockFormat {
-    int16_t m_h;
-    int16_t m_m;
-    int16_t m_s;
-    int16_t m_ms;
+    timestamp_ms m_m;
+    timestamp_ms m_ms;
 } clockFormat_t;
 
-void timeStampToClockFormat(clockFormat_t * clock, timestamp_ms time_ms){
-    clock->m_h = time_ms / 3600000;
-    clock->m_m = (time_ms / 60000) % 60;
-    clock->m_s = (time_ms / 1000) % 60;
-    clock->m_ms = time_ms % 1000;
+void balanceClock(clockFormat_t * clock){
+    if(clock->m_ms >= MS_TO_MIN){
+        clock->m_m += (clock->m_ms / MS_TO_MIN);
+        clock->m_ms = clock->m_ms % MS_TO_MIN;
+    }
 }
 
-void AddClocks(clockFormat_t * BaseClock, clockFormat_t * AddedValue){
-    BaseClock->m_h += AddedValue->m_h;
-    BaseClock->m_m += AddedValue->m_m;
-    BaseClock->m_s += AddedValue->m_s;
-    BaseClock->m_ms += AddedValue->m_ms;
+void timeStampToClockFormat(clockFormat_t * clock, timestamp_ms time_ms){
+    clock->m_m = (timestamp_ms)(time_ms / MS_TO_MIN);
+    clock->m_ms = (timestamp_ms)(time_ms % MS_TO_MIN);
+}
+
+void addTimeStamp(clockFormat_t * clock, timestamp_ms timeStamp){
+    clock->m_m += timeStamp / MS_TO_MIN;
+    clock->m_ms += timeStamp % MS_TO_MIN;
+    balanceClock(clock);
+}
+
+void subTimeStamp(clockFormat_t * clock, timestamp_ms timeStamp){
+    timestamp_ms min = timeStamp / MS_TO_MIN;
+    timestamp_ms ms = timeStamp % MS_TO_MIN;
+
+    if(clock->m_ms < ms){
+        if(clock->m_m == 0U){
+            clock->m_m = 0U;
+            clock->m_ms = 0U;
+            return;
+        }
+        clock->m_m--;
+        clock->m_ms += MS_TO_MIN - ms; 
+    }
+    else{
+        clock->m_ms -= ms;
+    }
+
+    if(clock->m_m < min){
+        clock->m_m = 0U;
+        clock->m_ms = 0U;
+        return;
+    }
+    else{
+        clock->m_m -= min;
+    }
+
+    balanceClock(clock);
+}
+
+void addClocks(clockFormat_t * BaseClock, clockFormat_t * addValue){
+    BaseClock->m_m += addValue->m_m;
+    BaseClock->m_ms += addValue->m_ms;
     balanceClock(BaseClock);
 }
 
-void balanceClock(clockFormat_t * clock){
-    clock->m_s += (clock->m_ms / 1000);
-    clock->m_m += (clock->m_s / 60);
-    clock->m_h += (clock->m_m / 60);
+void subClocks(clockFormat_t * BaseClock, clockFormat_t * subValue){
+    if(BaseClock->m_ms < subValue->m_ms){
+        if(BaseClock->m_m == 0U){
+            BaseClock->m_m = 0U;
+            BaseClock->m_ms = 0U;
+            return;
+        }
+        BaseClock->m_m--;
+        BaseClock->m_ms += MS_TO_MIN - subValue->m_ms; 
+    }
+
+    if(BaseClock->m_m < subValue->m_m){
+        BaseClock->m_m = 0U;
+        BaseClock->m_ms = 0U;
+        return;
+    }
+    else{
+        BaseClock->m_m -= subValue->m_m;
+    }
+
+    balanceClock(BaseClock);
 }
 
 timestamp_ms getTimeStamp(void){

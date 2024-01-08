@@ -26,7 +26,7 @@ buttonReturnType_t processInputs(void){
 
     buttonObj_t* obj[3] = {&g_ctrlButton, &g_leftButton, &g_rightButton};
     uint8_t pins[3] = {CTRL_PIN, TIMER0_PIN, TIMER1_PIN};
-    clockTime_ms time = getTime();
+    timestamp_ms time = getTimeStamp();
 
     for(int i = 0; i < 3 ; i++){
         // Update Timer
@@ -82,7 +82,7 @@ buttonReturnType_t clearInputs(void){
     if(g_buttonInit == BUTTON_ERROR){
         return BUTTON_ERROR;
     }
-    clockTime_ms time = getTime();
+    timestamp_ms time = getTimeStamp();
     g_ctrlButton.m_state = BUTTON_RELEASED;
     g_ctrlButton.m_prevState = g_ctrlButton.m_state;
     g_ctrlButton.m_momentaryState = BUTTON_RELEASED;

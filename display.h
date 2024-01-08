@@ -29,11 +29,6 @@ typedef enum displaySide{
     DISPLAY_SIDE_LEFT = 1,
 } displaySide_t;
 
-typedef enum digitUpdated{
-    DIGIT_UPDATED = 0,
-    DIGIT_PENDING = 1,
-} digitUpdated_t;
-
 typedef enum displayValue{
     // For digits
     DISPLAY_0 = 0,
@@ -57,11 +52,13 @@ typedef enum displayValue{
     PUNCT_COLON = 0,
     PUNCT_DOT = 4,
     PUNCT_BLANK = 15,
+
+    DISPLAY_INVALID,
 }displayValue_t;
 
 typedef struct displayObj {
-    digitUpdated_t m_updated;
     digitType_t m_type;
+    displayValue_t m_setVal;
     displayValue_t m_val;
     digitSelect_t m_sel;
 }displayObj_t;
@@ -83,6 +80,6 @@ displayStatus_t updateDisplay(void);
 
 displayValue_t intToDisplayDigit(uint8_t value);
 
-displayStatus_t setTimeToDisplay(clockTime_ms time, displaySide_t side);
+displayStatus_t setClockToDisplay(clockFormat_t time, displaySide_t side);
 
 #endif /* __DISPLAY_H__ */

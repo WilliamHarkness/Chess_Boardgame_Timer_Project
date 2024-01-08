@@ -19,7 +19,7 @@ static displayController_t g_dispCont = {
     .m_size = DISPLAY_SIZE,
     .m_selVal = 0,
     .m_phase = 0,
-    .m_timeStamp = getTime(),
+    .m_timeStamp = getTimeStamp(),
     .m_selObjMap = {
         {
             .m_type = TYPE_DIGIT,
@@ -88,7 +88,7 @@ displayStatus_t initDisplay(){
     if (g_dispCont.m_isInit == 0){
 
         g_dispCont.m_phase = 0;
-        g_dispCont.m_timeStamp = getTime();
+        g_dispCont.m_timeStamp = getTimeStamp();
         pinMode(PHASE_PIN, OUTPUT);
         digitalWrite(PHASE_PIN, g_dispCont.m_phase);
 
@@ -125,12 +125,13 @@ displayStatus_t clearDisplay(){
     for(int i = 0; i < DISPLAY_SIZE; i++){
         displayObj_t * obj = &g_dispCont.m_selObjMap[i];
         if ( obj->m_type == TYPE_DIGIT){
-            setDisplay(obj->m_sel, DISPLAY_BLANK);
+            obj->m_setVal = DISPLAY_BLANK;
         }
         else if(obj->m_type == TYPE_PUNCT){
-            setDisplay(obj->m_sel, PUNCT_BLANK);
+            obj->m_setVal = PUNCT_BLANK;
         }
     }
+    
     return DISPLAY_OK;
 }
 
@@ -143,37 +144,7 @@ displayStatus_t setDisplay(digitSelect_t sel, displayValue_t val){
         return DISPLAY_ERROR;
     }
 
-    if (g_dispCont.m_selObjMap[sel].m_val == val){
-        return DISPLAY_OK;
-    }
-
-    uint8_t pinArray[4] = {SEL3_PIN, SEL2_PIN, SEL1_PIN, SEL0_PIN};
-    for(uint8_t i = 0;  i < 4; i++){
-        uint8_t mask = 0x08 >> i;
-        if((sel & mask) != (g_dispCont.m_selVal & mask)){
-            if(sel & mask){
-                g_dispCont.m_selVal = g_dispCont.m_selVal | mask;
-            }
-            else{
-                g_dispCont.m_selVal = g_dispCont.m_selVal & ~(mask);
-            }
-            digitalWrite(pinArray[i], (g_dispCont.m_selVal & mask));
-
-            if(g_dispCont.m_selVal < DISPLAY_SIZE){
-                displayObj_t * obj = &g_dispCont.m_selObjMap[g_dispCont.m_selVal];
-                digitalWrite(DATA0_PIN, obj->m_val & 0x01);
-                digitalWrite(DATA1_PIN, obj->m_val & 0x02);
-                digitalWrite(DATA2_PIN, obj->m_val & 0x04);
-                digitalWrite(DATA3_PIN, obj->m_val & 0x08);
-            }   
-        }
-    }
-    displayObj_t * obj = &g_dispCont.m_selObjMap[g_dispCont.m_selVal];
-    obj->m_val = val;
-    digitalWrite(DATA0_PIN, obj->m_val & 0x01);
-    digitalWrite(DATA1_PIN, obj->m_val & 0x02);
-    digitalWrite(DATA2_PIN, obj->m_val & 0x04);
-    digitalWrite(DATA3_PIN, obj->m_val & 0x08);
+    g_dispCont.m_selObjMap[sel].m_setVal = val;
     return DISPLAY_OK;
 }
 
@@ -182,9 +153,10 @@ displayStatus_t updateDisplay(void){
         return DISPLAY_ERROR;
     }
     if(timeSince(g_dispCont.m_timeStamp) >= DISPLAY_PERIOD_MS){
+        g_dispCont.m_timeStamp = getTimeStamp();
         g_dispCont.m_phase = !g_dispCont.m_phase;
         digitalWrite(PHASE_PIN, g_dispCont.m_phase);
-
+        
         for(int sel = 0; sel < DISPLAY_SIZE; sel++){
             if (g_dispCont.m_selObjMap[sel].m_val == g_dispCont.m_selObjMap[sel].m_setVal){
                 continue;
@@ -204,25 +176,24 @@ displayStatus_t updateDisplay(void){
 
                     if(g_dispCont.m_selVal < DISPLAY_SIZE){
                         displayObj_t * obj = &g_dispCont.m_selObjMap[g_dispCont.m_selVal];
-                        digitalWrite(DATA0_PIN, obj->m_val & 0x01);
-                        digitalWrite(DATA1_PIN, obj->m_val & 0x02);
-                        digitalWrite(DATA2_PIN, obj->m_val & 0x04);
-                        digitalWrite(DATA3_PIN, obj->m_val & 0x08);
+                        digitalWrite(DATA0_PIN, obj->m_setVal & 0x01);
+                        digitalWrite(DATA1_PIN, obj->m_setVal & 0x02);
+                        digitalWrite(DATA2_PIN, obj->m_setVal & 0x04);
+                        digitalWrite(DATA3_PIN, obj->m_setVal & 0x08);
+                        obj->m_val = obj->m_setVal;
                     }   
                 }
             }
+            if(g_dispCont.m_selVal < DISPLAY_SIZE){
+                displayObj_t * obj = &g_dispCont.m_selObjMap[g_dispCont.m_selVal];
+                digitalWrite(DATA0_PIN, obj->m_setVal & 0x01);
+                digitalWrite(DATA1_PIN, obj->m_setVal & 0x02);
+                digitalWrite(DATA2_PIN, obj->m_setVal & 0x04);
+                digitalWrite(DATA3_PIN, obj->m_setVal & 0x08);
+                obj->m_val = obj->m_setVal;
+            }   
         }
-
-
-        displayObj_t * obj = &g_dispCont.m_selObjMap[g_dispCont.m_selVal];
-        obj->m_val = val;
-        digitalWrite(DATA0_PIN, obj->m_val & 0x01);
-        digitalWrite(DATA1_PIN, obj->m_val & 0x02);
-        digitalWrite(DATA2_PIN, obj->m_val & 0x04);
-        digitalWrite(DATA3_PIN, obj->m_val & 0x08);
-        return DISPLAY_OK;
     }
-
 }
 
 displayValue_t intToDisplayDigit(uint8_t value){
@@ -232,71 +203,7 @@ displayValue_t intToDisplayDigit(uint8_t value){
     return DISPLAY_BLANK;
 }
 
-displayStatus_t setTimeToDisplay(clockTime_ms time, displaySide_t side){
-    digitSelect_t d0;
-    digitSelect_t d1;
-    digitSelect_t d2;
-    digitSelect_t d3;
-    digitSelect_t dx;
-
-    clockTime_ms hours = 0U;
-    clockTime_ms minutes = 0U;
-    clockTime_ms seconds = 0U;
-
-    if(side == DISPLAY_SIDE_LEFT){
-        d0 = LEFT_CHAR_0;
-        d1 = LEFT_CHAR_1;
-        d2 = LEFT_CHAR_2;
-        d3 = LEFT_CHAR_3;
-        dx = LEFT_PUNCT;
-    }
-    else{
-        d0 = RIGHT_CHAR_0;
-        d1 = RIGHT_CHAR_1;
-        d2 = RIGHT_CHAR_2;
-        d3 = RIGHT_CHAR_3;
-        dx = RIGHT_PUNCT;
-    }
-
-    if(time < 60000){
-        seconds = time / 1000;
-        time = time % 1000;
-
-        setDisplay(d0, intToDisplayDigit(seconds / 10));
-        setDisplay(d1, intToDisplayDigit(seconds % 10));
-        setDisplay(d2, intToDisplayDigit(time / 100));
-        setDisplay(d3, intToDisplayDigit((time % 100) / 10));
-        setDisplay(dx, PUNCT_DOT);
-
-    }
-    else if (time < 3600000){
-        // MS -> S
-        seconds = time / 1000;
-        minutes = seconds / 60;
-
-        seconds = seconds % 60;
-
-        setDisplay(d0, intToDisplayDigit(minutes / 10));
-        setDisplay(d1, intToDisplayDigit(minutes % 10));
-        setDisplay(d2, intToDisplayDigit(seconds / 10));
-        setDisplay(d3, intToDisplayDigit(seconds % 10));
-        setDisplay(dx, PUNCT_COLON);
-    }
-    else{
-        minutes = time / 60000;
-        hours = minutes / 60;
-
-        minutes = minutes % 60;
-
-        setDisplay(d0, intToDisplayDigit(hours / 10));
-        setDisplay(d1, intToDisplayDigit(hours % 10));
-        setDisplay(d2, intToDisplayDigit(minutes / 10));
-        setDisplay(d3, intToDisplayDigit(minutes % 10));
-        setDisplay(dx, PUNCT_COLON);
-    }
-}
-
-displayStatus_t setClockToDisplay(clockFormat_t time, displaySide_t side){
+displayStatus_t setClockToDisplay(clockFormat_t* time, displaySide_t side){
     digitSelect_t d0;
     digitSelect_t d1;
     digitSelect_t d2;
@@ -319,46 +226,20 @@ displayStatus_t setClockToDisplay(clockFormat_t time, displaySide_t side){
     }
 
     uint8_t digitValue[4];
-    digitValue[0] = clockFormatRef->m_m / 10; // 10s of minutes
-    digitValue[1] = clockFormatRef->m_m % 10;
-    digitValue[2] = clockFormatRef->m_s / 10;
-    digitValue[3] = clockFormatRef->m_s % 10;
 
-    if(time < 60000){
-        seconds = time / 1000;
-        time = time % 1000;
-
-        setDisplay(d0, intToDisplayDigit(seconds / 10));
-        setDisplay(d1, intToDisplayDigit(seconds % 10));
-        setDisplay(d2, intToDisplayDigit(time / 100));
-        setDisplay(d3, intToDisplayDigit((time % 100) / 10));
-        setDisplay(dx, PUNCT_DOT);
-
-    }
-    else if (time < 3600000){
-        // MS -> S
-        seconds = time / 1000;
-        minutes = seconds / 60;
-
-        seconds = seconds % 60;
-
-        setDisplay(d0, intToDisplayDigit(minutes / 10));
-        setDisplay(d1, intToDisplayDigit(minutes % 10));
-        setDisplay(d2, intToDisplayDigit(seconds / 10));
-        setDisplay(d3, intToDisplayDigit(seconds % 10));
+    if (time->m_m > 0){
+        setDisplay(d0, intToDisplayDigit(time->m_m / 10U));
+        setDisplay(d1, intToDisplayDigit(time->m_m % 10U));
+        setDisplay(d2, intToDisplayDigit(time->m_ms / 10000U));
+        setDisplay(d3, intToDisplayDigit((time->m_ms % 10000U) / 1000U));
         setDisplay(dx, PUNCT_COLON);
     }
     else{
-        minutes = time / 60000;
-        hours = minutes / 60;
-
-        minutes = minutes % 60;
-
-        setDisplay(d0, intToDisplayDigit(hours / 10));
-        setDisplay(d1, intToDisplayDigit(hours % 10));
-        setDisplay(d2, intToDisplayDigit(minutes / 10));
-        setDisplay(d3, intToDisplayDigit(minutes % 10));
-        setDisplay(dx, PUNCT_COLON);
+        setDisplay(d0, intToDisplayDigit(time->m_ms / 10000U));
+        setDisplay(d1, intToDisplayDigit((time->m_ms % 10000U) / 1000U));
+        setDisplay(d2, intToDisplayDigit((time->m_ms / 100U) % 10U));
+        setDisplay(d3, intToDisplayDigit((time->m_ms % 100U) / 10U));
+        setDisplay(dx, PUNCT_DOT);
     }
 }
 

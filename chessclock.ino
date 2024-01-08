@@ -12,6 +12,12 @@ void setup() {
   initDisplay();
   initInputs();
   initProcess();
+
+//  Serial.begin(115200);
+//  Serial.println("Starting");
+
+//  setDisplay(LEFT_CHAR_0, DISPLAY_DASH);
+//  Serial.println("Set DASH");
 }
 
 void loop() {  
