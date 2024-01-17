@@ -1,5 +1,5 @@
-
 #include "processes.h"
+#include "blinkTimer.h"
 
 gameState_t g_splashScreenState = {
     .m_next = NULL,
@@ -23,12 +23,6 @@ gameState_t g_gameUpCountState = {
     .m_next = NULL,
     .m_prev = NULL,
     .m_process = &gameUpCountProcess,
-};
-
-gameState_t g_gameUpCountTwoPlayerState = {
-    .m_next = NULL,
-    .m_prev = NULL,
-    .m_process = &gameUpCountTwoPlayersProcess,
 };
 
 
@@ -56,9 +50,6 @@ void initProcess(void){
 }
 
 timestamp_ms g_timeStamp = 0U;
-timestamp_ms g_timeStampBlink = 0U;
-timestamp_ms g_timeStampClock = 0U;
-
 
 stateStatus_t splashScreenProcess(gameState_t* state, stateStatus_t stateStatus){
     static timestamp_ms timeStamp = getTimeStamp();
@@ -272,12 +263,7 @@ stateStatus_t gameModeProcess(gameState_t* state, stateStatus_t stateStatus){
                     }
                     else{
                         if(g_gameObject.m_mode == GAME_MODE_UP_COUNT){
-                            if(g_gameObject.m_players == 2){
-                                state->m_next = &g_gameUpCountTwoPlayerState;
-                            }
-                            else{
-                                state->m_next = &g_gameUpCountState;
-                            }
+                            state->m_next = &g_gameUpCountState;
                         }
                         else{
                             state->m_next = &g_configTimeState;
@@ -346,82 +332,13 @@ stateStatus_t gameModeProcess(gameState_t* state, stateStatus_t stateStatus){
 }
 
 stateStatus_t gameUpCountProcess(gameState_t* state, stateStatus_t stateStatus){
-    static timestamp_ms timeStamp = getTimeStamp();
-    timestamp_ms timeDelta;
-    buttonState_t btnState = BUTTON_RELEASED;
-    buttonState_t prevBtnState = BUTTON_RELEASED;
-    buttonUpdated_t updated = BUTTON_STALE;
-    switch(stateStatus){
-        case STATE_START:
-            clearDisplay();
-            clearInputs();
-            setDisplay(LEFT_CHAR_0, DISPLAY_P);
-            setDisplay(LEFT_CHAR_1, DISPLAY_L);
-            setDisplay(LEFT_CHAR_2, DISPLAY_4);
-            setDisplay(LEFT_CHAR_3, DISPLAY_5);
-
-            setDisplay(RIGHT_CHAR_3, DISPLAY_2);
-            stateStatus = STATE_RUNNING;
-            timeStamp = getTimeStamp();
-            break;
-
-        case STATE_RUNNING:{
-            timeDelta = timeSince(timeStamp);
-
-            if(getCtrlButtonState(&btnState, &prevBtnState, &updated) == BUTTON_OK){
-                if(btnState == BUTTON_RELEASED && updated == BUTTON_UPDATED){
-                    stateStatus = STATE_EXIT;
-                    state->m_next = &g_modeState;
-                }
-            }
-
-            if(getLeftButtonState(&btnState, &prevBtnState, &updated) == BUTTON_OK){
-                if(btnState == BUTTON_PRESSED && updated == BUTTON_UPDATED){
-                    if(--g_gameObject.m_players < MIN_NUMBER_PLAYERS){
-                        g_gameObject.m_players = MIN_NUMBER_PLAYERS;
-                    }
-                    timeStamp = getTimeStamp();
-                }
-            }
-            if(getRightButtonState(&btnState, &prevBtnState, &updated) == BUTTON_OK){
-                if(btnState == BUTTON_PRESSED && updated == BUTTON_UPDATED){
-                    if(++g_gameObject.m_players > MAX_NUMBER_PLAYERS){
-                        g_gameObject.m_players = MAX_NUMBER_PLAYERS;
-                    }
-                    timeStamp = getTimeStamp();
-                }
-            }
-
-            if(timeDelta >= 700 && timeDelta < 1000){
-                setDisplay(RIGHT_CHAR_3, DISPLAY_BLANK);
-            }
-            else{
-                if(timeDelta >= 1000){
-                    timeStamp += 1000;
-                }
-                setDisplay(RIGHT_CHAR_3, intToDisplayDigit(g_gameObject.m_players));
-            }
-        } break;
-        
-        case STATE_EXIT:
-        case STATE_ERROR:
-        default:
-            stateStatus = STATE_ERROR;
-            break;
-    }
-   return stateStatus;
-}
-
-stateStatus_t gameUpCountTwoPlayersProcess(gameState_t* state, stateStatus_t stateStatus){
     static uint8_t isPaused = 0;
     timestamp_ms timeDelta;
-    timestamp_ms timeDeltaBlink;
-    timestamp_ms timeDeltaClock;
+
     buttonState_t btnState = BUTTON_RELEASED;
     buttonState_t prevBtnState = BUTTON_RELEASED;
     buttonUpdated_t updated = BUTTON_STALE;
-    clockFormat_t *clockLeft = &g_gameObject.m_playerTimer[0];
-    clockFormat_t *clockRight = &g_gameObject.m_playerTimer[1];
+
     uint8_t nextPlayer = 0;
     
     switch(stateStatus){
@@ -432,16 +349,15 @@ stateStatus_t gameUpCountTwoPlayersProcess(gameState_t* state, stateStatus_t sta
 
             stateStatus = STATE_RUNNING;
             g_timeStamp = getTimeStamp();
-            g_timeStampBlink = g_timeStamp;
-            g_timeStampClock = g_timeStamp;
+            resetBlinkTimer(0, QUICK_BLINK_PERIOD, QUICK_BLINK_DUTY_CYCLE, BLINK_ON);
+            resetBlinkTimer(1, SLOW_BLINK_PERIOD, SLOW_BLINK_DUTY_CYCLE, BLINK_ON);
             break;
 
         case STATE_RUNNING:{
             timeDelta = timeSinceSeemless(&g_timeStamp);
-            timeDeltaBlink = timeSince(g_timeStampBlink);
-            timeDeltaClock = timeSince(g_timeStampClock);
-            if(isPaused){
-                timeDelta = 0U;
+            if(!isPaused){
+                // Update Timer
+                addTimeStamp(&g_gameObject.m_playerTimer[g_gameObject.m_playerSelect], timeDelta);
             }
 
             if(getCtrlButtonState(&btnState, &prevBtnState, &updated) == BUTTON_OK){
@@ -456,88 +372,111 @@ stateStatus_t gameUpCountTwoPlayersProcess(gameState_t* state, stateStatus_t sta
 
             if(getLeftButtonState(&btnState, &prevBtnState, &updated) == BUTTON_OK){
                 if(btnState == BUTTON_PRESSED && updated == BUTTON_UPDATED){
-                    if(isPaused){
-                        g_gameObject.m_playerSelect = 0;
+                    if(g_gameObject.m_players == 2){
+                        if(isPaused){
+                            if(g_gameObject.m_playerSelect == 0){
+                                g_gameObject.m_playerSelect = g_gameObject.m_players;
+                            }
+                            g_gameObject.m_playerSelect--;
+                        }
                     }
-                    else if (g_gameObject.m_playerSelect == 0){
-                        nextPlayer = 1;
+                    else{
+                        if(++g_gameObject.m_playerSelect >= g_gameObject.m_players){ 
+                            g_gameObject.m_playerSelect = 0;
+                        }
                     }
                 }
             }
             if(getRightButtonState(&btnState, &prevBtnState, &updated) == BUTTON_OK){
                 if(btnState == BUTTON_PRESSED && updated == BUTTON_UPDATED){
-                    if(isPaused){
-                        g_gameObject.m_playerSelect = 1;
+                    if(g_gameObject.m_players == 2){
+                        if(isPaused){
+                            if(++g_gameObject.m_playerSelect >= g_gameObject.m_players){
+                                g_gameObject.m_playerSelect = 0;
+                            }
+                        }
                     }
-                    else if (g_gameObject.m_playerSelect == 1){
-                        nextPlayer = 1;
+                    else{
+                        if(++g_gameObject.m_playerSelect >= g_gameObject.m_players){ 
+                            g_gameObject.m_playerSelect = 0;
+                        }
                     }
                 }
             }
 
-            // Update Timers
-            if(g_gameObject.m_playerSelect == 1){
-                addTimeStamp(clockRight, timeDelta);
-            }
-            else{
-                addTimeStamp(clockLeft, timeDelta);
-            }
-
-            if(nextPlayer){
-                if (g_gameObject.m_playerSelect == 1){
-                    g_gameObject.m_playerSelect = 0;
+            clockFormat_t *tmpClock;
+            if(g_gameObject.m_players == 2){
+                // Check Slow Blink
+                if(isBlinkOn(1) == BLINK_OFF){
+                    setClockToDisplay(&g_gameObject.m_playerTimer[1], getSimplifiedClockType(&g_gameObject.m_playerTimer[1]), DISPLAY_SIDE_RIGHT);
+                    setClockToDisplay(&g_gameObject.m_playerTimer[0], getSimplifiedClockType(&g_gameObject.m_playerTimer[0]), DISPLAY_SIDE_LEFT);
                 }
                 else{
-                    g_gameObject.m_playerSelect = 1;
-                }
-            }
+                    tmpClock = &g_gameObject.m_playerTimer[1];
+                    switch(getSimplifiedClockType(tmpClock)){
+                        case CLOCK_DISPLAY_HOURS:
+                        case CLOCK_DISPLAY_MINUTES:
+                            setClockToDisplay(tmpClock, CLOCK_DISPLAY_MINUTES, DISPLAY_SIDE_RIGHT);
+                            break;
 
-            if(timeDeltaClock >= CLOCK_HOUR_DISPLAY_OFF_TIME){
-                setClockToDisplay(clockRight, getSimplifiedClockType(clockRight), DISPLAY_SIDE_RIGHT);
-                setClockToDisplay(clockLeft, getSimplifiedClockType(clockLeft), DISPLAY_SIDE_LEFT);
-                if(timeDeltaClock >= CLOCK_HOUR_DISPLAY_PERIOD){
-                    g_timeStampClock += CLOCK_HOUR_DISPLAY_PERIOD; 
+                        case CLOCK_DISPLAY_SECONDS:
+                        default:
+                            setClockToDisplay(tmpClock, CLOCK_DISPLAY_SECONDS, DISPLAY_SIDE_RIGHT);
+                            break;
+
+                    }
+                    tmpClock = &g_gameObject.m_playerTimer[0];
+                    switch(getSimplifiedClockType(tmpClock)){
+                        case CLOCK_DISPLAY_HOURS:
+                        case CLOCK_DISPLAY_MINUTES:
+                            setClockToDisplay(tmpClock, CLOCK_DISPLAY_MINUTES, DISPLAY_SIDE_LEFT);
+                            break;
+
+                        case CLOCK_DISPLAY_SECONDS:
+                        default:
+                            setClockToDisplay(tmpClock, CLOCK_DISPLAY_SECONDS, DISPLAY_SIDE_LEFT);
+                            break;
+                    }
+                }
+                
+                if(isPaused){
+                    // Check Quick Blink
+                    if(isBlinkOn(0) == BLINK_OFF){
+                        if(g_gameObject.m_playerSelect == 1){
+                            setDisplay(RIGHT_PUNCT, DISPLAY_BLANK);                        
+                        }
+                        else if(g_gameObject.m_playerSelect == 0){
+                            setDisplay(LEFT_PUNCT, DISPLAY_BLANK);
+                        }
+                    }
                 }
             }
             else{
-                switch(getSimplifiedClockType(clockRight)){
-                    case CLOCK_DISPLAY_HOURS:
-                    case CLOCK_DISPLAY_MINUTES:
-                        setClockToDisplay(clockRight, CLOCK_DISPLAY_MINUTES, DISPLAY_SIDE_RIGHT);
-                        break;
-
-                    case CLOCK_DISPLAY_SECONDS:
-                    default:
-                        setClockToDisplay(clockRight, CLOCK_DISPLAY_SECONDS, DISPLAY_SIDE_RIGHT);
-                        break;
-
+                // Check Slow Blink
+                tmpClock = &g_gameObject.m_playerTimer[g_gameObject.m_playerSelect];
+                if(isBlinkOn(1) == BLINK_OFF){
+                    setClockToDisplay(tmpClock, getSimplifiedClockType(tmpClock), DISPLAY_SIDE_RIGHT);
                 }
-                switch(getSimplifiedClockType(clockLeft)){
-                    case CLOCK_DISPLAY_HOURS:
-                    case CLOCK_DISPLAY_MINUTES:
-                        setClockToDisplay(clockLeft, CLOCK_DISPLAY_MINUTES, DISPLAY_SIDE_LEFT);
-                        break;
+                else{
+                    switch(getSimplifiedClockType(tmpClock)){
+                        case CLOCK_DISPLAY_HOURS:
+                        case CLOCK_DISPLAY_MINUTES:
+                            setClockToDisplay(tmpClock, CLOCK_DISPLAY_MINUTES, DISPLAY_SIDE_RIGHT);
+                            break;
 
-                    case CLOCK_DISPLAY_SECONDS:
-                    default:
-                        setClockToDisplay(clockLeft, CLOCK_DISPLAY_SECONDS, DISPLAY_SIDE_LEFT);
-                        break;
+                        case CLOCK_DISPLAY_SECONDS:
+                        default:
+                            setClockToDisplay(tmpClock, CLOCK_DISPLAY_SECONDS, DISPLAY_SIDE_RIGHT);
+                            break;
+
+                    }
                 }
+                setDisplay(LEFT_CHAR_0, DISPLAY_BLANK);
+                setDisplay(LEFT_CHAR_1, DISPLAY_P);
+                setDisplay(LEFT_CHAR_2, intToDisplayDigit(g_gameObject.m_playerSelect));
+                setDisplay(LEFT_CHAR_3, DISPLAY_BLANK);
             }
-            
-            if(isPaused){
-                if(timeDeltaBlink >= BLINK_ON_TIME){
-                    if(g_gameObject.m_playerSelect == 1){
-                        setDisplay(RIGHT_PUNCT, DISPLAY_BLANK);                        
-                    }
-                    else if(g_gameObject.m_playerSelect == 0){
-                        setDisplay(LEFT_PUNCT, DISPLAY_BLANK);
-                    }
-                    if(timeDeltaBlink >= BLINK_PERIOD){
-                        g_timeStampBlink += BLINK_PERIOD; 
-                    }
-                }
-            }
+
         } break;
         
         case STATE_EXIT:

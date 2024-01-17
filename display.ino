@@ -207,7 +207,7 @@ displayValue_t intToDisplayDigit(uint8_t value){
 
 clockDisplayType_t getSimplifiedClockType(clockFormat_t* time){
     if(time->m_m > 0){
-        if(time->m_m > 60){
+        if(time->m_m >= 60){
             return CLOCK_DISPLAY_HOURS;
         }
         return CLOCK_DISPLAY_MINUTES;

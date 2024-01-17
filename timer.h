@@ -1,7 +1,7 @@
 #ifndef __TIMER_H__
 #define __TIMER_H__
 
-#define CLOCK_FORMAT_INIT {0, 0}
+#define CLOCK_FORMAT_INIT {0U, 0U}
 #define MS_TO_MIN 60000U
 
 typedef unsigned long timestamp_ms;

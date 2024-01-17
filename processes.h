@@ -1,5 +1,5 @@
-#ifndef __MENU_PROCESS_H__
-#define __MENU_PROCESS_H__
+#ifndef __PROCESSES_H__
+#define __PROCESSES_H__
 
 #include "states.h"
 #include "timer.h"
@@ -8,12 +8,6 @@
 
 #define MIN_NUMBER_PLAYERS 1
 #define MAX_NUMBER_PLAYERS 9
-
-#define BLINK_PERIOD 1000
-#define BLINK_ON_TIME 800
-
-#define CLOCK_HOUR_DISPLAY_PERIOD 3000
-#define CLOCK_HOUR_DISPLAY_OFF_TIME 1500
 
 typedef enum gameMode{
     GAME_MODE_UP_COUNT = 0,
@@ -38,4 +32,6 @@ stateStatus_t gameModeProcess(gameState_t* state, stateStatus_t stateStatus);
 
 stateStatus_t configTimeProcess(gameState_t* state, stateStatus_t stateStatus);
 
-#endif /* __MENU_PROCESS_H__ */
+stateStatus_t gameUpCountProcess(gameState_t* state, stateStatus_t stateStatus);
+
+#endif /* __PROCESSES_H__ */
