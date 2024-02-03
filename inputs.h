@@ -5,9 +5,9 @@
 
 /////////////////////// Macros /////////////////////
 
-#define DEBOUNCE_TIME_MS 25
+#define DEBOUNCE_TIME_US 25000
 
-#define BUTTON_HOLD_TIME_MS 1000
+#define BUTTON_HOLD_TIME_US 300000
 
 #define BUTTON_PRESSED_VALUE LOW
 
@@ -34,8 +34,8 @@ typedef struct buttonObj{
     buttonState_t m_prevState;
     buttonState_t m_momentaryState;
     buttonUpdated_t m_updated;
-    timestamp_ms m_timeStampPressed;
-    timestamp_ms m_timeStampReleased;
+    timestamp_us m_timeStampPressed;
+    timestamp_us m_timeStampReleased;
 } buttonObj_t;
 
 /////////////////////// Function Definitions /////////////////////

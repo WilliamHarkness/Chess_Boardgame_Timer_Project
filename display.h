@@ -7,9 +7,10 @@
 /////////////////////// Struct and Enum Definitions /////////////////////
 
 typedef enum clockDisplayType{
-    CLOCK_DISPLAY_HOURS,
-    CLOCK_DISPLAY_MINUTES,
-    CLOCK_DISPLAY_SECONDS,
+    CLOCK_DISPLAY_HOURS_ONLY,
+    CLOCK_DISPLAY_HOURS_MIN,
+    CLOCK_DISPLAY_MIN_SEC,
+    CLOCK_DISPLAY_SEC_MSEC,
 } clockDisplayType_t;
 
 typedef enum displaySelect{

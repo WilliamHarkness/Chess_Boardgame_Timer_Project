@@ -25,8 +25,6 @@ stateStatus_t initState(void){
     g_status = STATE_START;
 }
 
-
-
 stateStatus_t processState(void){
     if(g_currentState == NULL){
         g_status = STATE_ERROR;
@@ -35,7 +33,9 @@ stateStatus_t processState(void){
         g_status = g_currentState->m_process(g_currentState, g_status);
         if(STATE_EXIT == g_status){
             if(g_currentState->m_next != NULL){
-                g_currentState->m_next->m_prev = g_currentState;
+                if(g_currentState->m_next != g_currentState->m_prev){
+                    g_currentState->m_next->m_prev = g_currentState;
+                }                
             }
             g_currentState = g_currentState->m_next;
             g_status = STATE_START;

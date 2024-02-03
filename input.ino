@@ -26,7 +26,7 @@ buttonReturnType_t processInputs(void){
 
     buttonObj_t* obj[3] = {&g_ctrlButton, &g_leftButton, &g_rightButton};
     uint8_t pins[3] = {CTRL_PIN, TIMER0_PIN, TIMER1_PIN};
-    timestamp_ms time = getTimeStamp();
+    timestamp_us time = getTimeStamp();
 
     for(int i = 0; i < 3 ; i++){
         // Update Timer
@@ -50,7 +50,7 @@ buttonReturnType_t processInputs(void){
         // Check debouce
         if(obj[i]->m_momentaryState == BUTTON_RELEASED){
             if(obj[i]->m_state != BUTTON_RELEASED){
-                if(timeSince(obj[i]->m_timeStampReleased) >= DEBOUNCE_TIME_MS){
+                if(timeSince(obj[i]->m_timeStampReleased) >= DEBOUNCE_TIME_US){
                     obj[i]->m_prevState = obj[i]->m_state;
                     obj[i]->m_state = BUTTON_RELEASED;
                     obj[i]->m_updated = BUTTON_UPDATED;
@@ -59,14 +59,14 @@ buttonReturnType_t processInputs(void){
         }
         else{
             if(obj[i]->m_state == BUTTON_RELEASED){
-                if(timeSince(obj[i]->m_timeStampPressed) >= DEBOUNCE_TIME_MS){
+                if(timeSince(obj[i]->m_timeStampPressed) >= DEBOUNCE_TIME_US){
                     obj[i]->m_prevState = obj[i]->m_state;
                     obj[i]->m_state = BUTTON_PRESSED;
                     obj[i]->m_updated = BUTTON_UPDATED;
                 }
             }
             else if(obj[i]->m_state == BUTTON_PRESSED){
-                if(timeSince(obj[i]->m_timeStampPressed) >= BUTTON_HOLD_TIME_MS){
+                if(timeSince(obj[i]->m_timeStampPressed) >= BUTTON_HOLD_TIME_US){
                     obj[i]->m_prevState = obj[i]->m_state;
                     obj[i]->m_state = BUTTON_HELD;
                     obj[i]->m_updated = BUTTON_UPDATED;
@@ -82,7 +82,7 @@ buttonReturnType_t clearInputs(void){
     if(g_buttonInit == BUTTON_ERROR){
         return BUTTON_ERROR;
     }
-    timestamp_ms time = getTimeStamp();
+    timestamp_us time = getTimeStamp();
     g_ctrlButton.m_state = BUTTON_RELEASED;
     g_ctrlButton.m_prevState = g_ctrlButton.m_state;
     g_ctrlButton.m_momentaryState = BUTTON_RELEASED;

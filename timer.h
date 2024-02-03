@@ -1,104 +1,107 @@
 #ifndef __TIMER_H__
 #define __TIMER_H__
 
-#define CLOCK_FORMAT_INIT {0U, 0U}
-#define MS_TO_MIN 60000U
+#define CLOCK_OVERFLOWED 1
+#define CLOCK_NOT_OVERFLOWED 0
+#define CLOCK_FORMAT_INIT {CLOCK_NOT_OVERFLOWED, 0U, 0U}
+#define US_TO_MIN 60000000U
 
-typedef unsigned long timestamp_ms;
+typedef unsigned long timestamp_us;
 
 typedef struct clockFormat {
-    timestamp_ms m_m;
-    timestamp_ms m_ms;
+    uint8_t m_overflow;
+    timestamp_us m_m;
+    timestamp_us m_us;
 } clockFormat_t;
 
 void balanceClock(clockFormat_t * clock){
-    if(clock->m_ms >= MS_TO_MIN){
-        clock->m_m += (clock->m_ms / MS_TO_MIN);
-        clock->m_ms = clock->m_ms % MS_TO_MIN;
+    if(clock->m_us >= US_TO_MIN){
+        clock->m_m += (clock->m_us / US_TO_MIN);
+        clock->m_us = clock->m_us % US_TO_MIN;
     }
 }
 
-void timeStampToClockFormat(clockFormat_t * clock, timestamp_ms time_ms){
-    clock->m_m = (timestamp_ms)(time_ms / MS_TO_MIN);
-    clock->m_ms = (timestamp_ms)(time_ms % MS_TO_MIN);
-}
-
-void addTimeStamp(clockFormat_t * clock, timestamp_ms timeStamp){
-    clock->m_m += timeStamp / MS_TO_MIN;
-    clock->m_ms += timeStamp % MS_TO_MIN;
-    balanceClock(clock);
-}
-
-void subTimeStamp(clockFormat_t * clock, timestamp_ms timeStamp){
-    timestamp_ms min = timeStamp / MS_TO_MIN;
-    timestamp_ms ms = timeStamp % MS_TO_MIN;
-
-    if(clock->m_ms < ms){
-        if(clock->m_m == 0U){
-            clock->m_m = 0U;
-            clock->m_ms = 0U;
-            return;
-        }
-        clock->m_m--;
-        clock->m_ms += MS_TO_MIN - ms; 
-    }
-    else{
-        clock->m_ms -= ms;
-    }
-
-    if(clock->m_m < min){
-        clock->m_m = 0U;
-        clock->m_ms = 0U;
-        return;
-    }
-    else{
-        clock->m_m -= min;
-    }
-
-    balanceClock(clock);
+void timeStampToClockFormat(clockFormat_t * clock, timestamp_us time_us){
+    clock->m_m = (timestamp_us)(time_us / US_TO_MIN);
+    clock->m_us = (timestamp_us)(time_us % US_TO_MIN);
 }
 
 void addClocks(clockFormat_t * BaseClock, clockFormat_t * addValue){
     BaseClock->m_m += addValue->m_m;
-    BaseClock->m_ms += addValue->m_ms;
+    BaseClock->m_us += addValue->m_us;
     balanceClock(BaseClock);
+    if(BaseClock->m_m >= 6000){
+        BaseClock->m_m = 5999U;
+        BaseClock->m_us = 59990U;
+    }
 }
 
 void subClocks(clockFormat_t * BaseClock, clockFormat_t * subValue){
-    if(BaseClock->m_ms < subValue->m_ms){
+    balanceClock(subValue);
+    balanceClock(BaseClock);
+    if(BaseClock->m_us < subValue->m_us){
         if(BaseClock->m_m == 0U){
-            BaseClock->m_m = 0U;
-            BaseClock->m_ms = 0U;
+            subClocks(subValue, BaseClock);
+            *BaseClock = *subValue;
+            BaseClock->m_overflow = CLOCK_OVERFLOWED;
             return;
         }
         BaseClock->m_m--;
-        BaseClock->m_ms += MS_TO_MIN - subValue->m_ms; 
+        BaseClock->m_us += US_TO_MIN - subValue->m_us; 
+    }
+    else{
+        BaseClock->m_us -= subValue->m_us;
     }
 
     if(BaseClock->m_m < subValue->m_m){
-        BaseClock->m_m = 0U;
-        BaseClock->m_ms = 0U;
+        subClocks(subValue, BaseClock);
+        *BaseClock = *subValue;
+        BaseClock->m_overflow = CLOCK_OVERFLOWED;
         return;
     }
     else{
         BaseClock->m_m -= subValue->m_m;
     }
-
+    
     balanceClock(BaseClock);
 }
 
-timestamp_ms getTimeStamp(void){
-    return millis();
+void addTimeStamp(clockFormat_t * clock, timestamp_us timeStamp){
+    clockFormat_t refClock;
+    timeStampToClockFormat(&refClock, timeStamp);
+    addClocks(clock, &refClock);
 }
 
-timestamp_ms timeSince(timestamp_ms time){
-    return millis() - time;
+void subTimeStamp(clockFormat_t * clock, timestamp_us timeStamp){
+    clockFormat_t refClock;
+    timeStampToClockFormat(&refClock, timeStamp);
+    subClocks(clock, &refClock);
 }
 
-timestamp_ms timeSinceSeemless(timestamp_ms *time){
-    timestamp_ms diff = millis() - *time;
+timestamp_us getTimeStamp(void){
+    return micros();
+}
+
+timestamp_us timeSince(timestamp_us time){
+  
+    return micros() - time;
+}
+
+timestamp_us timeSinceSeemless(timestamp_us *time){
+    timestamp_us diff = micros() - *time;
     *time += diff;
     return diff;
+}
+
+uint8_t isTimeOverFlowed(clockFormat_t *time){
+    return time->m_overflow;
+}
+
+uint8_t isTimeZero(clockFormat_t *time){
+    if(time->m_m == 0 && time->m_us == 0){
+        return 1;
+    }
+    return 0;
 }
 
 #endif /* __TIMER_H__ */

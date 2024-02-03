@@ -3,20 +3,13 @@
 #include "display.h"
 #include "states.h"
 #include "inputs.h"
+#include "buzzer.h"
 
 void setup() {
-  pinMode(BUZZER_PIN, OUTPUT);
-  digitalWrite(BUZZER_PIN, 0);
-
   initState();
   initDisplay();
   initInputs();
-
-//  Serial.begin(115200);
-//  Serial.println("Starting");
-
-//  setDisplay(LEFT_CHAR_0, DISPLAY_DASH);
-//  Serial.println("Set DASH");
+  initBuzzer();
 }
 
 void loop() {  
@@ -24,5 +17,6 @@ void loop() {
     processState();
     processInputs();
     updateDisplay();
+    updateBuzzer();
   }
 }

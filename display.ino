@@ -10,7 +10,7 @@ typedef struct displayController{
     uint8_t m_size;
     uint8_t m_selVal;
     uint8_t m_phase;
-    timestamp_ms m_timeStamp;
+    timestamp_us m_timeStamp;
     displayObj_t m_selObjMap[DISPLAY_SIZE];
 } displayController_t;
 
@@ -208,11 +208,11 @@ displayValue_t intToDisplayDigit(uint8_t value){
 clockDisplayType_t getSimplifiedClockType(clockFormat_t* time){
     if(time->m_m > 0){
         if(time->m_m >= 60){
-            return CLOCK_DISPLAY_HOURS;
+            return CLOCK_DISPLAY_HOURS_MIN;
         }
-        return CLOCK_DISPLAY_MINUTES;
+        return CLOCK_DISPLAY_MIN_SEC;
     }
-    return CLOCK_DISPLAY_SECONDS;
+    return CLOCK_DISPLAY_SEC_MSEC;
 }
 
 displayStatus_t setClockToDisplay(clockFormat_t* time, clockDisplayType_t displayType, displaySide_t side){
@@ -237,7 +237,7 @@ displayStatus_t setClockToDisplay(clockFormat_t* time, clockDisplayType_t displa
     }
 
     switch(displayType){
-        case CLOCK_DISPLAY_HOURS:
+        case CLOCK_DISPLAY_HOURS_ONLY:
                 setDisplay(d0, intToDisplayDigit(time->m_m / 600U));
                 setDisplay(d1, intToDisplayDigit((time->m_m / 60U) % 10));
                 setDisplay(d2, DISPLAY_H);
@@ -245,33 +245,31 @@ displayStatus_t setClockToDisplay(clockFormat_t* time, clockDisplayType_t displa
                 setDisplay(dx, PUNCT_BLANK);
             break;
 
-        case CLOCK_DISPLAY_MINUTES:
-                setDisplay(d0, intToDisplayDigit((time->m_m % 60) / 10));
-                setDisplay(d1, intToDisplayDigit(time->m_m % 10U));
-                setDisplay(d2, intToDisplayDigit(time->m_ms / 10000U));
-                setDisplay(d3, intToDisplayDigit((time->m_ms % 10000U) / 1000U));
+        case CLOCK_DISPLAY_HOURS_MIN:
+                setDisplay(d0, intToDisplayDigit(time->m_m / 600U));
+                setDisplay(d1, intToDisplayDigit((time->m_m / 60U) % 10));
+                setDisplay(d2, intToDisplayDigit((time->m_m % 60) / 10));
+                setDisplay(d3, intToDisplayDigit(time->m_m % 10U));
                 setDisplay(dx, PUNCT_COLON);
             break;
 
-        case CLOCK_DISPLAY_SECONDS:
-            setDisplay(d0, intToDisplayDigit(time->m_ms / 10000U));
-            setDisplay(d1, intToDisplayDigit((time->m_ms % 10000U) / 1000U));
-            setDisplay(d2, intToDisplayDigit((time->m_ms / 100U) % 10U));
-            setDisplay(d3, intToDisplayDigit((time->m_ms % 100U) / 10U));
+        case CLOCK_DISPLAY_MIN_SEC:
+                setDisplay(d0, intToDisplayDigit((time->m_m % 60) / 10));
+                setDisplay(d1, intToDisplayDigit(time->m_m % 10U));
+                setDisplay(d2, intToDisplayDigit(time->m_us / 10000000U));
+                setDisplay(d3, intToDisplayDigit((time->m_us / 1000000U) % 10U));
+                setDisplay(dx, PUNCT_COLON);
+            break;
+
+        case CLOCK_DISPLAY_SEC_MSEC:
+            setDisplay(d0, intToDisplayDigit(time->m_us / 10000000U));
+            setDisplay(d1, intToDisplayDigit((time->m_us / 1000000U) % 10U));
+            setDisplay(d2, intToDisplayDigit((time->m_us / 100000U) % 10));
+            setDisplay(d3, intToDisplayDigit((time->m_us / 10000U) % 10));
             setDisplay(dx, PUNCT_DOT);
             break;
 
         default:
-            if (time->m_m > 0){
-
-            }
-            else{
-                setDisplay(d0, intToDisplayDigit(time->m_ms / 10000U));
-                setDisplay(d1, intToDisplayDigit((time->m_ms % 10000U) / 1000U));
-                setDisplay(d2, intToDisplayDigit((time->m_ms / 100U) % 10U));
-                setDisplay(d3, intToDisplayDigit((time->m_ms % 100U) / 10U));
-                setDisplay(dx, PUNCT_DOT);
-            }
             break;
     }
 

@@ -3,7 +3,7 @@
 
 blinkStruct_t g_blinkObject[BLINK_ARRAY_SIZE];
 
-void resetBlinkTimer(uint8_t blinkIndex, timestamp_ms period, float dutyCycle, uint8_t startingState){
+void resetBlinkTimer(uint8_t blinkIndex, timestamp_us period, float dutyCycle, uint8_t startingState){
     if(blinkIndex < BLINK_ARRAY_SIZE){
         g_blinkObject[blinkIndex].m_timeStamp = getTimeStamp();
         g_blinkObject[blinkIndex].m_period = period;
@@ -15,7 +15,7 @@ void resetBlinkTimer(uint8_t blinkIndex, timestamp_ms period, float dutyCycle, u
 int isBlinkOn(uint8_t blinkIndex){
 
     if(blinkIndex < BLINK_ARRAY_SIZE){
-        timestamp_ms delta = timeSince(g_blinkObject[blinkIndex].m_timeStamp);
+        timestamp_us delta = timeSince(g_blinkObject[blinkIndex].m_timeStamp);
 
         if(delta < g_blinkObject[blinkIndex].m_onTime){
             return g_blinkObject[blinkIndex].m_startingState;
