@@ -342,7 +342,7 @@ stateStatus_t gameOnePlayerRecursiveProcess(gameState_t* state, stateStatus_t st
     buttonState_t btnState = BUTTON_RELEASED;
     buttonState_t prevBtnState = BUTTON_RELEASED;
     buttonUpdated_t updated = BUTTON_STALE;
-    static uint8_t isRunning = 0;
+    static uint8_t isSet = 0;
 
     uint8_t nextPlayer = 0;
     
@@ -356,7 +356,7 @@ stateStatus_t gameOnePlayerRecursiveProcess(gameState_t* state, stateStatus_t st
             g_gameObject.m_playerTimer[0] = g_gameObject.m_playerStoredTime[0];
             g_gameObject.m_playerMode[0] = GAME_MODE_RECURSIVE;
             stateStatus = STATE_RUNNING;
-            isRunning = 0;
+            isSet = 0;
             g_timeStamp = getTimeStamp();
             break;
 
@@ -365,6 +365,7 @@ stateStatus_t gameOnePlayerRecursiveProcess(gameState_t* state, stateStatus_t st
             if(!g_isPaused){
                 // Update Timer
                 subTimeStamp(&g_gameObject.m_playerTimer[0], timeDelta);
+                isSet = 0;
                 if(isTimeOverFlowed(&g_gameObject.m_playerTimer[0]) == CLOCK_OVERFLOWED || 
                         isTimeZero(&g_gameObject.m_playerTimer[0])){
                     setBuzzer();
@@ -381,36 +382,34 @@ stateStatus_t gameOnePlayerRecursiveProcess(gameState_t* state, stateStatus_t st
                         stateStatus = STATE_EXIT;
                     }
                     if(g_isPaused){
-                        if(isRunning){
-                            isRunning = 0;
-                            g_gameObject.m_playerTimer[0] = g_gameObject.m_playerStoredTime[0];
-                        }
-                        else{
-                            g_isPaused = 0;
-                            isRunning = 1;
-                        }
+                        g_isPaused = 0;
                     }
                     else{
                         g_isPaused = 1;
-                        isRunning = 0;
                     }
                 }
             }
 
             if(getLeftButtonState(&btnState, &prevBtnState, &updated) == BUTTON_OK){
                 if(btnState == BUTTON_PRESSED && updated == BUTTON_UPDATED){
-                    if(isRunning){
-                        g_isPaused = 0;
+                    if(g_isPaused){
+                        if(isSet){
+                            g_isPaused = 0;
+                        }
                     }
                     g_gameObject.m_playerTimer[0] = g_gameObject.m_playerStoredTime[0];
+                    isSet = 1;
                 }
             }
             if(getRightButtonState(&btnState, &prevBtnState, &updated) == BUTTON_OK){
                 if(btnState == BUTTON_PRESSED && updated == BUTTON_UPDATED){
-                    if(isRunning){
-                        g_isPaused = 0;
+                    if(g_isPaused){
+                        if(isSet){
+                            g_isPaused = 0;
+                        }
                     }
                     g_gameObject.m_playerTimer[0] = g_gameObject.m_playerStoredTime[0];
+                    isSet = 1;
                 }
             }
             setClockToDisplay(&g_gameObject.m_playerTimer[0], CLOCK_DISPLAY_HOURS_MIN, DISPLAY_SIDE_LEFT);

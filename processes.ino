@@ -990,7 +990,7 @@ stateStatus_t gameDownCountProcess(gameState_t* state, stateStatus_t stateStatus
             clockFormat_t *tmpClock;
             // Check Slow Blink
             tmpClock = &g_gameObject.m_playerTimer[g_gameObject.m_playerSelect];
-            if(isBlinkOn(1) == BLINK_ON){
+            if(isBlinkOn(1) == BLINK_OFF){
                 switch(getSimplifiedClockType(tmpClock)){
                     case CLOCK_DISPLAY_HOURS_ONLY:
                     case CLOCK_DISPLAY_HOURS_MIN:
@@ -1148,7 +1148,7 @@ stateStatus_t gameRecursiveProcess(gameState_t* state, stateStatus_t stateStatus
             clockFormat_t *tmpClock;
             // Check Slow Blink
             tmpClock = &g_gameObject.m_playerTimer[g_gameObject.m_playerSelect];
-            if(isBlinkOn(1) == BLINK_ON){
+            if(isBlinkOn(1) == BLINK_OFF){
                 switch(getSimplifiedClockType(tmpClock)){
                     case CLOCK_DISPLAY_HOURS_ONLY:
                     case CLOCK_DISPLAY_HOURS_MIN:

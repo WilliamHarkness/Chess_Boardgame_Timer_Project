@@ -1,0 +1,5 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "CUSTOM_SWITCHING_REG")(type "KiCad")(uri "${KIPRJMOD}/CUSTOM_SWITCHING_REG.kicad_sym")(options "")(descr ""))
+  (lib (name "SwitchingReg_CUSTOM")(type "KiCad")(uri "${KIPRJMOD}/SwitchingReg_CUSTOM.kicad_sym")(options "")(descr ""))
+)

@@ -123,7 +123,7 @@ stateStatus_t gameTwoPlayerUpCountProcess(gameState_t* state, stateStatus_t stat
             clockFormat_t *tmpClock;
 
             // Check Slow Blink
-            if(isBlinkOn(1) == BLINK_ON){
+            if(isBlinkOn(1) == BLINK_OFF){
                 switch(getSimplifiedClockType(&g_gameObject.m_playerTimer[0])){
                     case CLOCK_DISPLAY_HOURS_ONLY:
                     case CLOCK_DISPLAY_HOURS_MIN:
@@ -654,7 +654,7 @@ stateStatus_t gameTwoPlayerDownCountProcess(gameState_t* state, stateStatus_t st
             clockFormat_t *tmpClock;
 
             // Check Slow Blink
-            if(isBlinkOn(1) == BLINK_ON){
+            if(isBlinkOn(1) == BLINK_OFF){
                 switch(getSimplifiedClockType(&g_gameObject.m_playerTimer[0])){
                     case CLOCK_DISPLAY_HOURS_ONLY:
                     case CLOCK_DISPLAY_HOURS_MIN:
